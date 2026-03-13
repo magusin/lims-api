@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model analyses {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String    @db.VarChar(255)
+  unit          String?   @db.VarChar(50)
+  reference_min Float?
+  reference_max Float?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  results       results[]
+}
+
+model clients {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String     @db.VarChar(255)
+  email      String?    @db.VarChar(255)
+  phone      String?    @db.VarChar(50)
+  address    String?
+  created_at DateTime?  @default(now()) @db.Timestamp(6)
+  requests   requests[]
+}
+
+model logs {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?   @db.Uuid
+  action     String?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model machines {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String    @db.VarChar(255)
+  model      String?   @db.VarChar(255)
+  location   String?   @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  results    results[]
+}
+
+model requests {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_code    String?   @unique @db.VarChar(100)
+  client_id       String?   @db.Uuid
+  order_reference String?   @db.VarChar(255)
+  received_date   DateTime? @db.Timestamp(6)
+  status          String?   @db.VarChar(50)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  clients         clients?  @relation(fields: [client_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  samples         samples[]
+
+  @@index([client_id], map: "idx_requests_client")
+  @@index([order_reference], map: "idx_requests_order")
+}
+
+model results {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sample_id   String?   @db.Uuid
+  analysis_id String?   @db.Uuid
+  machine_id  String?   @db.Uuid
+  value       Float?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  analyses    analyses? @relation(fields: [analysis_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  machines    machines? @relation(fields: [machine_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  samples     samples?  @relation(fields: [sample_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([analysis_id], map: "idx_results_analysis")
+  @@index([sample_id], map: "idx_results_sample")
+}
+
+model samples {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sample_code String?   @unique @db.VarChar(100)
+  request_id  String?   @db.Uuid
+  sample_type String?   @db.VarChar(100)
+  status      String?   @db.VarChar(50)
+  operator    String?   @db.VarChar(100)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  results     results[]
+  requests    requests? @relation(fields: [request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([sample_code], map: "idx_samples_code")
+  @@index([request_id], map: "idx_samples_request")
+}
+
+model users {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username      String    @unique @db.VarChar(100)
+  password_hash String    @db.VarChar(255)
+  role          String    @db.VarChar(50)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  logs          logs[]
+}
