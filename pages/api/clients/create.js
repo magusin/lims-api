@@ -2,19 +2,35 @@ import { prisma } from "../../../lib/prisma"
 
 export default async function handler(req, res) {
 
-  if (req.method !== "POST")
-    return res.status(405).end()
+    if (req.method === "POST") {
 
-  const { name, email, phone } = req.body
+        const { name, email, phone, address } = req.body
+      
+        if (!name || !email) {
+          return res.status(400).json({ error: "name et email requis" })
+        }
+      
+        const existing = await prisma.clients.findFirst({
+          where: { email }
+        })
+      
+        if (existing) {
+          return res.status(409).json({ error: "Client déjà existant" })
+        }
+      
+        const client = await prisma.clients.create({
+          data: {
+            name,
+            email,
+            phone,
+            address
+          }
+        })
+      
+        return res.status(201).json(client)
+      
+      }
 
-  const client = await prisma.clients.create({
-    data: {
-      name,
-      email,
-      phone
-    }
-  })
-
-  res.json(client)
+  return res.status(405).json({ error: "Method not allowed" })
 
 }
