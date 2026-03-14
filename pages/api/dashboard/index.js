@@ -4,7 +4,7 @@ export default async function handler(req, res) {
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-
+    try {
     const requests_today = await prisma.requests.count({
         where: {
             created_at: { gte: today }
@@ -52,5 +52,13 @@ export default async function handler(req, res) {
         results_today,
         latest_results
     })
+} catch (error) {
 
+    console.error(error)
+
+    res.status(500).json({
+      error: error.message
+    })
+
+  }
 }
